@@ -11,11 +11,15 @@ const Attendance = sequelize.define('Attendance', {
     type: DataTypes.UUID,
     allowNull: false,
     field: 'class_session_id',
+    references: { model: 'class_sessions', key: 'id' },
+    onDelete: 'CASCADE'
   },
   studentId: {
     type: DataTypes.UUID,
     allowNull: false,
     field: 'student_id',
+    references: { model: 'students', key: 'id' },
+    onDelete: 'CASCADE'
   },
   status: {
     type: DataTypes.STRING(20),

@@ -37,6 +37,11 @@ const ClassSession = sequelize.define('ClassSession', {
     allowNull: false,
     field: 'room_location',
   },
+  roomId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    field: 'room_id',
+  },
   latitude: {
     type: DataTypes.DECIMAL(10, 8),
     allowNull: false,

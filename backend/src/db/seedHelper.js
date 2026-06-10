@@ -6,17 +6,14 @@ const {
   Course,
   CourseRegistration,
   ClassSession,
+  Room,
   Attendance,
   AttendanceLog
 } = require('../models');
 
 const seedDatabase = async () => {
   try {
-    // 1. Sync database tables
-    console.log('Syncing database tables...');
-    await sequelize.sync({ force: false }); // Set force: true to reset database on every run
-
-    // 2. Check if departments exist, if so database is already seeded
+    // Check if departments exist; if so, database is already seeded — skip
     const deptCount = await Department.count();
     if (deptCount > 0) {
       console.log('Database already has data. Skipping seeder...');
@@ -33,15 +30,23 @@ const seedDatabase = async () => {
       { id: 'd4444444-4444-4444-4444-444444444444', name: 'Accounting', faculty: 'Management Sciences' }
     ]);
 
+    // Seed Rooms
+    const rooms = await Room.bulkCreate([
+      { name: 'Computer Lab', latitude: 6.428062, longitude: 3.421943 },
+      { name: 'Lecture Room 1', latitude: 6.429000, longitude: 3.422500 },
+      { name: 'Lecture Room 2', latitude: 6.427000, longitude: 3.421000 }
+    ]);
+
     // 4. Create Users (passwords will be hashed automatically by User model hooks)
     const users = await User.bulkCreate([
-      { id: 'l1111111-1111-1111-1111-111111111111', email: 'lecturer@computing.edu.ng', passwordHash: 'password123', role: 'lecturer' },
-      { id: 'l2222222-2222-2222-2222-222222222222', email: 'lecturer2@accounting.edu.ng', passwordHash: 'password123', role: 'lecturer' },
-      { id: 's1111111-1111-1111-1111-111111111111', email: 'cs_student1@computing.edu.ng', passwordHash: 'password123', role: 'student' },
-      { id: 's2222222-2222-2222-2222-222222222222', email: 'se_student2@computing.edu.ng', passwordHash: 'password123', role: 'student' },
-      { id: 's3333333-3333-3333-3333-333333333333', email: 'it_student3@computing.edu.ng', passwordHash: 'password123', role: 'student' },
-      { id: 's4444444-4444-4444-4444-444444444444', email: 'acct_student4@management.edu.ng', passwordHash: 'password123', role: 'student' }
-    ], { individualHooks: true }); // Enable hooks to hash password123
+      { id: 'l1111111-1111-1111-1111-111111111111', email: 'lecturer@computing.edu.ng', passwordHash: 'password123', role: 'lecturer', isApproved: true, fullName: 'Dr. Smith' },
+      { id: 'l2222222-2222-2222-2222-222222222222', email: 'lecturer2@accounting.edu.ng', passwordHash: 'password123', role: 'lecturer', isApproved: true, fullName: 'Prof. Miller' },
+      { id: 's1111111-1111-1111-1111-111111111111', email: 'cs_student1@computing.edu.ng', passwordHash: 'password123', role: 'student', isApproved: true },
+      { id: 's2222222-2222-2222-2222-222222222222', email: 'se_student2@computing.edu.ng', passwordHash: 'password123', role: 'student', isApproved: true },
+      { id: 's3333333-3333-3333-3333-333333333333', email: 'it_student3@computing.edu.ng', passwordHash: 'password123', role: 'student', isApproved: true },
+      { id: 's4444444-4444-4444-4444-444444444444', email: 'acct_student4@management.edu.ng', passwordHash: 'password123', role: 'student', isApproved: true },
+      { id: 'a1111111-1111-1111-1111-111111111111', email: 'admin@computing.edu.ng', passwordHash: 'admin123', role: 'admin', isApproved: true, fullName: 'Portal Administrator' }
+    ], { individualHooks: true }); // Enable hooks to hash passwords
 
     // 5. Create Students
     const students = await Student.bulkCreate([
@@ -60,23 +65,23 @@ const seedDatabase = async () => {
 
     // 7. Enroll Students (Course Registrations)
     await CourseRegistration.bulkCreate([
-      // CSC301 Enrollments (Alice, Bob, Charlie)
+      // CSC301 Enrollments (Alice, Bob, Charlie allowed)
       { studentId: students[0].id, courseId: courses[0].id },
       { studentId: students[1].id, courseId: courses[0].id },
       { studentId: students[2].id, courseId: courses[0].id },
-      // SEN302 Enrollments (Alice, Bob)
+      // SEN302 Enrollments
       { studentId: students[0].id, courseId: courses[1].id },
       { studentId: students[1].id, courseId: courses[1].id },
-      // ACC301 Enrollments (David)
+      // ACC301 Enrollments
       { studentId: students[3].id, courseId: courses[2].id }
     ]);
 
     // 8. Create Class Sessions for CSC301 (Coordinates: Computing lab center: 6.428062, 3.421943)
     const sessions = await ClassSession.bulkCreate([
-      { id: 'cs111111-1111-1111-1111-111111111111', courseId: courses[0].id, sessionName: 'Introduction & Setup', date: '2026-05-15', startTime: '09:00:00', endTime: '11:00:00', roomLocation: 'Computing Lab 1', latitude: 6.42806200, longitude: 3.42194300, allowedRadiusMeters: 50, isActive: false },
-      { id: 'cs222222-2222-2222-2222-222222222222', courseId: courses[0].id, sessionName: 'Processes & Threads', date: '2026-05-22', startTime: '09:00:00', endTime: '11:00:00', roomLocation: 'Computing Lab 1', latitude: 6.42806200, longitude: 3.42194300, allowedRadiusMeters: 50, isActive: false },
-      { id: 'cs333333-3333-3333-3333-333333333333', courseId: courses[0].id, sessionName: 'Memory Management', date: '2026-05-29', startTime: '09:00:00', endTime: '11:00:00', roomLocation: 'Computing Lab 1', latitude: 6.42806200, longitude: 3.42194300, allowedRadiusMeters: 50, isActive: false },
-      { id: 'cs444444-4444-4444-4444-444444444444', courseId: courses[0].id, sessionName: 'File Systems (Active)', date: new Date().toISOString().split('T')[0], startTime: '09:00:00', endTime: '11:00:00', roomLocation: 'Computing Lab 1', latitude: 6.42806200, longitude: 3.42194300, allowedRadiusMeters: 50, isActive: true, qrSecretSalt: 'today_secret_salt_string' }
+      { id: 'cs111111-1111-1111-1111-111111111111', courseId: courses[0].id, sessionName: 'Introduction & Setup', date: '2026-05-15', startTime: '09:00:00', endTime: '11:00:00', roomLocation: 'Computer Lab', roomId: rooms[0].id, latitude: 6.42806200, longitude: 3.42194300, allowedRadiusMeters: 500, isActive: false },
+      { id: 'cs222222-2222-2222-2222-222222222222', courseId: courses[0].id, sessionName: 'Processes & Threads', date: '2026-05-22', startTime: '09:00:00', endTime: '11:00:00', roomLocation: 'Computer Lab', roomId: rooms[0].id, latitude: 6.42806200, longitude: 3.42194300, allowedRadiusMeters: 500, isActive: false },
+      { id: 'cs333333-3333-3333-3333-333333333333', courseId: courses[0].id, sessionName: 'Memory Management', date: '2026-05-29', startTime: '09:00:00', endTime: '11:00:00', roomLocation: 'Computer Lab', roomId: rooms[0].id, latitude: 6.42806200, longitude: 3.42194300, allowedRadiusMeters: 500, isActive: false },
+      { id: 'cs444444-4444-4444-4444-444444444444', courseId: courses[0].id, sessionName: 'File Systems (Active)', date: new Date().toISOString().split('T')[0], startTime: '09:00:00', endTime: '11:00:00', roomLocation: 'Computer Lab', roomId: rooms[0].id, latitude: 6.42806200, longitude: 3.42194300, allowedRadiusMeters: 500, isActive: true, qrSecretSalt: 'today_secret_salt_string' }
     ]);
 
     // 9. Create past attendance records

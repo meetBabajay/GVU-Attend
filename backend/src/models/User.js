@@ -25,8 +25,19 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING(20),
     allowNull: false,
     validate: {
-      isIn: [['lecturer', 'student']],
+      isIn: [['lecturer', 'student', 'admin']],
     }
+  },
+  isApproved: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    field: 'is_approved'
+  },
+  fullName: {
+    type: DataTypes.STRING(150),
+    allowNull: true,
+    field: 'full_name'
   }
 }, {
   tableName: 'users',
@@ -45,4 +56,8 @@ User.prototype.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.passwordHash);
 };
 
+const Score = require('./Score');
+
+// Association: each user (student) has one Score record
+User.hasOne(Score, { foreignKey: 'userId', as: 'score' });
 module.exports = User;

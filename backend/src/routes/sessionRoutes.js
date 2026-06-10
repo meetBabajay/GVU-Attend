@@ -3,6 +3,9 @@ const router = express.Router();
 const sessionController = require('../controllers/sessionController');
 const { authenticateJWT, isLecturer } = require('../middlewares/auth');
 
+// Protected: List all rooms
+router.get('/rooms', authenticateJWT, sessionController.listRooms);
+
 // Protected: List all sessions of a specific course
 router.get('/course/:courseId', authenticateJWT, sessionController.listSessions);
 

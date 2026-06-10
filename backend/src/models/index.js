@@ -6,12 +6,12 @@ const Course = require('./Course');
 const CourseRegistration = require('./CourseRegistration');
 const ClassSession = require('./ClassSession');
 const Attendance = require('./Attendance');
+const Room = require('./Room');
 const AttendanceLog = require('./AttendanceLog');
 const AttendanceReport = require('./AttendanceReport');
 
 // 1. User <-> Student (One-to-One Profile relation)
-User.hasOne(Student, { foreignKey: 'user_id', as: 'studentProfile', onDelete: 'CASCADE' });
-Student.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+// User.hasOne(Student, { foreignKey: 'user_id', as: 'studentProfile', onDelete: 'CASCADE' }); // Association removed due to init issue
 
 // 2. Department <-> Student (One-to-Many)
 Department.hasMany(Student, { foreignKey: 'department_id', as: 'students', onDelete: 'RESTRICT' });
@@ -22,6 +22,9 @@ Department.hasMany(Course, { foreignKey: 'department_id', as: 'courses', onDelet
 Course.belongsTo(Department, { foreignKey: 'department_id', as: 'department' });
 
 // 4. User (Lecturer) <-> Course (One-to-Many)
+
+Student.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
 User.hasMany(Course, { foreignKey: 'lecturer_id', as: 'taughtCourses', onDelete: 'RESTRICT' });
 Course.belongsTo(User, { foreignKey: 'lecturer_id', as: 'lecturer' });
 
@@ -47,6 +50,10 @@ Attendance.belongsTo(ClassSession, { foreignKey: 'class_session_id', as: 'sessio
 Student.hasMany(Attendance, { foreignKey: 'student_id', as: 'attendanceRecords', onDelete: 'CASCADE' });
 Attendance.belongsTo(Student, { foreignKey: 'student_id', as: 'student' });
 
+// 11. Room <-> ClassSession (One-to-Many)
+Room.hasMany(ClassSession, { foreignKey: 'room_id', as: 'sessions', onDelete: 'CASCADE' });
+ClassSession.belongsTo(Room, { foreignKey: 'room_id', as: 'room' });
+
 // 9. ClassSession <-> AttendanceLog (One-to-Many)
 ClassSession.hasMany(AttendanceLog, { foreignKey: 'class_session_id', as: 'logs', onDelete: 'CASCADE' });
 AttendanceLog.belongsTo(ClassSession, { foreignKey: 'class_session_id', as: 'session' });
@@ -63,6 +70,7 @@ module.exports = {
   Course,
   CourseRegistration,
   ClassSession,
+  Room,
   Attendance,
   AttendanceLog,
   AttendanceReport

@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { ClassSession, Course } = require('../models');
+const { ClassSession, Course, Room } = require('../models');
 
 // GET /api/sessions/:courseId - List all sessions for a course
 exports.listSessions = async (req, res) => {
@@ -27,13 +27,31 @@ exports.listSessions = async (req, res) => {
 // POST /api/sessions/:courseId - Create a new class session (Lecturer only)
 exports.createSession = async (req, res) => {
   const { courseId } = req.params;
-  const { sessionName, date, startTime, endTime, roomLocation, latitude, longitude, allowedRadiusMeters } = req.body;
+  const { sessionName, date, startTime, endTime, roomId, roomLocation, latitude, longitude, allowedRadiusMeters } = req.body;
 
-  if (!sessionName || !date || !startTime || !endTime || !roomLocation || latitude === undefined || longitude === undefined) {
+  if (!sessionName || !date || !startTime || !endTime) {
     return res.status(400).json({ error: 'Missing required session parameters' });
   }
 
   try {
+    let finalRoomLocation = roomLocation;
+    let finalLatitude = latitude;
+    let finalLongitude = longitude;
+    let finalRoomId = roomId;
+
+    if (roomId) {
+      const room = await Room.findByPk(roomId);
+      if (!room) {
+        return res.status(404).json({ error: 'Room not found' });
+      }
+      finalRoomLocation = room.name;
+      finalLatitude = room.latitude;
+      finalLongitude = room.longitude;
+      finalRoomId = room.id;
+    } else if (!roomLocation || latitude === undefined || longitude === undefined) {
+      return res.status(400).json({ error: 'Either roomId or roomLocation, latitude, and longitude must be provided' });
+    }
+
     const course = await Course.findByPk(courseId);
     if (!course) {
       return res.status(404).json({ error: 'Course not found' });
@@ -49,10 +67,11 @@ exports.createSession = async (req, res) => {
       date,
       startTime,
       endTime,
-      roomLocation,
-      latitude,
-      longitude,
-      allowedRadiusMeters: allowedRadiusMeters || 50,
+      roomId: finalRoomId,
+      roomLocation: finalRoomLocation,
+      latitude: finalLatitude,
+      longitude: finalLongitude,
+      allowedRadiusMeters: allowedRadiusMeters || 500, // Default to 500m per request
       isActive: false
     });
 
@@ -173,6 +192,19 @@ exports.getQRToken = async (req, res) => {
     });
   } catch (error) {
     console.error('Error generating QR token:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// GET /api/sessions/rooms - List all rooms
+exports.listRooms = async (req, res) => {
+  try {
+    const rooms = await Room.findAll({
+      order: [['name', 'ASC']]
+    });
+    return res.status(200).json(rooms);
+  } catch (error) {
+    console.error('Error fetching rooms:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 };

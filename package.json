@@ -1,0 +1,17 @@
+{
+  "name": "attendance-management-system",
+  "version": "1.0.0",
+  "description": "Full-stack Attendance Management System with Geofencing and Dynamic QR Codes",
+  "main": "test_attendance.js",
+  "scripts": {
+    "install-all": "npm install && npm install --prefix backend && npm install --prefix frontend",
+    "build": "npm run build --prefix frontend",
+    "start": "node backend/src/app.js",
+    "dev-backend": "npm run dev --prefix backend",
+    "dev-frontend": "npm run dev --prefix frontend"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}

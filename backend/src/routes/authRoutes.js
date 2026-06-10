@@ -1,15 +1,32 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
-const { authenticateJWT, isLecturer } = require('../middlewares/auth');
+const { authenticateJWT, isAdmin } = require('../middlewares/auth');
 
-// Public route for signing in
+// ── Public Routes ───────────────────────────────────────────
 router.post('/login', authController.login);
 
-// Protected: Only lecturers can register/import students into the database
-router.post('/register-student', authenticateJWT, isLecturer, authController.registerStudent);
+// Student self-registration (pending admin approval)
+router.post('/register-student', authController.registerStudent);
 
-// Protected: Retrieves profile details of currently logged-in user
+// Instructor self-registration (pending admin approval)
+router.post('/register-lecturer', authController.registerLecturer);
+
+// Public: list all departments (used by registration form)
+router.get('/departments', authController.listDepartments);
+
+// ── Authenticated Routes ───────────────────────────────────
+// Get current logged-in user profile
 router.get('/me', authenticateJWT, authController.me);
+
+// ── Admin-Only Routes ──────────────────────────────────────
+// List all pending (unapproved) user registrations
+router.get('/pending', authenticateJWT, isAdmin, authController.listPendingUsers);
+
+// Approve a pending registration
+router.post('/approve/:userId', authenticateJWT, isAdmin, authController.approveUser);
+
+// Reject (delete) a pending registration
+router.delete('/reject/:userId', authenticateJWT, isAdmin, authController.rejectUser);
 
 module.exports = router;
