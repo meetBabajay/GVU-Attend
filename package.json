@@ -13,5 +13,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "dependencies": {
+    "serverless-http": "^12.0.0"
+  },
   "type": "commonjs"
-}
