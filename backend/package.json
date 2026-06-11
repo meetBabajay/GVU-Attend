@@ -15,6 +15,7 @@
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.11.5",
     "sequelize": "^6.37.3",
+    "serverless-http": "^3.2.0",
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {
