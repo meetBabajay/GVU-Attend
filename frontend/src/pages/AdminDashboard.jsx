@@ -253,8 +253,6 @@ const AdminDashboard = () => {
             </button>
           </div>
 
-        </div>
-
         {/* Tab Contents */}
         {activeTab === 'overview' && (
           <div className="space-y-8 animate-fadeIn">
@@ -447,7 +445,9 @@ const AdminDashboard = () => {
           </div>
         )}
 
-
+        {activeTab === 'pending' && (
+          <div className="glass-panel p-6 rounded-2xl shadow-sm animate-fadeIn">
+            <h2 className="text-xl font-bold mb-6">Registration Approvals Queue</h2>
             {pending.length === 0 ? (
               <div className="text-center py-16 text-slate-500 dark:text-slate-400">
                 <svg className="w-16 h-16 mx-auto mb-4 text-slate-300 dark:text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
