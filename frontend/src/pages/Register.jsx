@@ -78,7 +78,7 @@ const StudentForm = ({ onSuccess }) => {
 
   useEffect(() => {
     api.get('/auth/departments')
-      .then(r => setDepartments(r.data && r.data.length > 0 ? r.data : FALLBACK_DEPARTMENTS))
+      .then(r => setDepartments(r.data && Array.isArray(r.data) && r.data.length > 0 ? r.data : FALLBACK_DEPARTMENTS))
       .catch(() => setDepartments(FALLBACK_DEPARTMENTS));
   }, []);
 
