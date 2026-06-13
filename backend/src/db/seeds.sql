@@ -1,10 +1,10 @@
 -- 1. DEPARTMENTS
 INSERT INTO departments (id, name, faculty) VALUES
 ('d1111111-1111-1111-1111-111111111111', 'Computer Science', 'Science and Computing'),
-('d2222222-2222-2222-2222-222222222222', 'Software Engineering', 'Science and Computing'),
-('d3333333-3333-3333-3333-333333333333', 'Information Technology', 'Science and Computing'),
+('d2222222-2222-2222-2222-222222222222', 'Mass Comm', 'Social Sciences'),
+('d3333333-3333-3333-3333-333333333333', 'Economics', 'Social Sciences'),
 ('d4444444-4444-4444-4444-444444444444', 'Accounting', 'Management Sciences')
-ON CONFLICT (name) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, faculty = EXCLUDED.faculty;
 
 -- 2. USERS (Passwords hashed using bcrypt for "password123")
 -- Hash for "password123": $2b$10$eE0U4yF5/O.gKk2D6B0DDeaQyJbY2VpeJ3oP2XwW09aR9eB/O2.7S

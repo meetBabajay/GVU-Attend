@@ -9,9 +9,11 @@ const Attendance = require('./Attendance');
 const Room = require('./Room');
 const AttendanceLog = require('./AttendanceLog');
 const AttendanceReport = require('./AttendanceReport');
+const Score = require('./Score');
 
 // 1. User <-> Student (One-to-One Profile relation)
-// User.hasOne(Student, { foreignKey: 'user_id', as: 'studentProfile', onDelete: 'CASCADE' }); // Association removed due to init issue
+User.hasOne(Student, { foreignKey: 'user_id', as: 'studentProfile', onDelete: 'CASCADE' });
+Student.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
 // 2. Department <-> Student (One-to-Many)
 Department.hasMany(Student, { foreignKey: 'department_id', as: 'students', onDelete: 'RESTRICT' });
@@ -22,9 +24,6 @@ Department.hasMany(Course, { foreignKey: 'department_id', as: 'courses', onDelet
 Course.belongsTo(Department, { foreignKey: 'department_id', as: 'department' });
 
 // 4. User (Lecturer) <-> Course (One-to-Many)
-
-Student.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
-
 User.hasMany(Course, { foreignKey: 'lecturer_id', as: 'taughtCourses', onDelete: 'RESTRICT' });
 Course.belongsTo(User, { foreignKey: 'lecturer_id', as: 'lecturer' });
 
@@ -50,17 +49,24 @@ Attendance.belongsTo(ClassSession, { foreignKey: 'class_session_id', as: 'sessio
 Student.hasMany(Attendance, { foreignKey: 'student_id', as: 'attendanceRecords', onDelete: 'CASCADE' });
 Attendance.belongsTo(Student, { foreignKey: 'student_id', as: 'student' });
 
-// 11. Room <-> ClassSession (One-to-Many)
+// 9. Room <-> ClassSession (One-to-Many)
 Room.hasMany(ClassSession, { foreignKey: 'room_id', as: 'sessions', onDelete: 'CASCADE' });
 ClassSession.belongsTo(Room, { foreignKey: 'room_id', as: 'room' });
 
-// 9. ClassSession <-> AttendanceLog (One-to-Many)
+// 10. ClassSession <-> AttendanceLog (One-to-Many)
 ClassSession.hasMany(AttendanceLog, { foreignKey: 'class_session_id', as: 'logs', onDelete: 'CASCADE' });
 AttendanceLog.belongsTo(ClassSession, { foreignKey: 'class_session_id', as: 'session' });
 
-// 10. Course <-> AttendanceReport (One-to-Many)
+// 11. Course <-> AttendanceReport (One-to-Many)
 Course.hasMany(AttendanceReport, { foreignKey: 'course_id', as: 'reports', onDelete: 'CASCADE' });
 AttendanceReport.belongsTo(Course, { foreignKey: 'course_id', as: 'course' });
+
+// 12. User <-> Score (One-to-One)
+User.hasOne(Score, { foreignKey: 'userId', as: 'score' });
+Score.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+// 13. Student <-> Score via User (for scoreboard queries)
+Student.hasOne(Score, { foreignKey: 'userId', sourceKey: 'userId', as: 'score' });
 
 module.exports = {
   sequelize,
@@ -73,5 +79,6 @@ module.exports = {
   Room,
   Attendance,
   AttendanceLog,
-  AttendanceReport
+  AttendanceReport,
+  Score,
 };

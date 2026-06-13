@@ -114,21 +114,26 @@ exports.listLecturers = async (req, res) => {
 // GET /api/admin/scoreboard - Get scoreboard for all students
 exports.getScoreboard = async (req, res) => {
   try {
+    const { Score } = require('../models');
     const students = await Student.findAll({
       include: [
         { model: User, as: 'user', attributes: ['fullName', 'email'] },
-        { model: require('../models').Score, as: 'score' }
+        { model: Score, as: 'score', required: false }
       ]
     });
     const result = students.map(s => ({
       studentId: s.id,
-      fullName: s.user?.fullName,
+      fullName: s.user?.fullName || s.fullName,
       email: s.user?.email,
+      matricNumber: s.matricNumber,
+      level: s.level,
       attendanceCount: s.score?.attendanceCount || 0,
       assignmentScore: s.score?.assignmentScore || 0,
       testScore: s.score?.testScore || 0,
       total: (s.score?.attendanceCount || 0) + (s.score?.assignmentScore || 0) + (s.score?.testScore || 0)
     }));
+    // Sort descending by total
+    result.sort((a, b) => b.total - a.total);
     return res.status(200).json(result);
   } catch (error) {
     console.error('Error fetching scoreboard:', error);
@@ -137,13 +142,19 @@ exports.getScoreboard = async (req, res) => {
 };
 
 // PUT /api/admin/score/:studentId - Update assignment or test scores for a student
+// studentId here is the Student.id (not User.id) — resolve to userId first
 exports.updateScore = async (req, res) => {
   const { studentId } = req.params;
   const { assignmentScore, testScore } = req.body;
   try {
-    const score = await require('../models').Score.findOne({ where: { userId: studentId } });
+    const { Score } = require('../models');
+    // studentId param may be a Student.id; find the student to get userId
+    const student = await Student.findByPk(studentId);
+    const lookupId = student ? student.userId : studentId;
+    let score = await Score.findOne({ where: { userId: lookupId } });
     if (!score) {
-      return res.status(404).json({ error: 'Score record not found for this student' });
+      // Create if missing
+      score = await Score.create({ userId: lookupId, attendanceCount: 0, assignmentScore: 0, testScore: 0 });
     }
     if (assignmentScore !== undefined) score.assignmentScore = assignmentScore;
     if (testScore !== undefined) score.testScore = testScore;
@@ -155,10 +166,19 @@ exports.updateScore = async (req, res) => {
   }
 };
 
-// GET /api/admin/db/schema - Return SQLite schema information
+// GET /api/admin/db/schema - Return table list (Postgres & SQLite compatible)
 exports.getSchema = async (req, res) => {
   try {
-    const [results] = await sequelize.query("SELECT name, sql FROM sqlite_master WHERE type='table' ORDER BY name;");
+    // Works on both PostgreSQL (via information_schema) and SQLite
+    const dialect = sequelize.getDialect();
+    let results;
+    if (dialect === 'sqlite') {
+      [results] = await sequelize.query("SELECT name AS table_name FROM sqlite_master WHERE type='table' ORDER BY name;");
+    } else {
+      [results] = await sequelize.query(
+        "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name;"
+      );
+    }
     return res.status(200).json(results);
   } catch (error) {
     console.error('Error fetching schema:', error);

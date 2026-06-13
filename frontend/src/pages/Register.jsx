@@ -66,6 +66,7 @@ const StudentForm = ({ onSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState('');
   const [showPwd, setShowPwd] = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
 
   useEffect(() => {
     api.get('/auth/departments')
@@ -207,16 +208,26 @@ const StudentForm = ({ onSuccess }) => {
         {errors.password && <p className="text-[10px] text-red-500 ml-1">{errors.password}</p>}
       </div>
 
-      <InputField
-        label="Confirm Password"
-        icon={Lock}
-        type="password"
-        value={form.confirmPassword}
-        onChange={handleChange('confirmPassword')}
-        placeholder="Repeat password"
-        error={errors.confirmPassword}
-        required
-      />
+      <div className="space-y-1">
+        <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 ml-1">Confirm Password</label>
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+            <Lock className="h-4 w-4 text-slate-400" />
+          </div>
+          <input
+            type={showConfirmPwd ? 'text' : 'password'}
+            value={form.confirmPassword}
+            onChange={handleChange('confirmPassword')}
+            placeholder="Repeat password"
+            className={`block w-full pl-10 pr-10 py-2 text-sm rounded-xl border ${errors.confirmPassword ? 'border-red-400 dark:border-red-600' : 'border-slate-200 dark:border-slate-700'} bg-white/50 dark:bg-slate-800/50 text-slate-950 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all`}
+            required
+          />
+          <button type="button" onClick={() => setShowConfirmPwd(s => !s)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors">
+            {showConfirmPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+        {errors.confirmPassword && <p className="text-[10px] text-red-500 ml-1 mt-0.5">{errors.confirmPassword}</p>}
+      </div>
 
       <button
         type="submit"
@@ -243,6 +254,7 @@ const InstructorForm = ({ onSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState('');
   const [showPwd, setShowPwd] = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
 
   const validate = () => {
     const e = {};
@@ -332,16 +344,26 @@ const InstructorForm = ({ onSuccess }) => {
         {errors.password && <p className="text-[10px] text-red-500 ml-1">{errors.password}</p>}
       </div>
 
-      <InputField
-        label="Confirm Password"
-        icon={Lock}
-        type="password"
-        value={form.confirmPassword}
-        onChange={handleChange('confirmPassword')}
-        placeholder="Repeat password"
-        error={errors.confirmPassword}
-        required
-      />
+      <div className="space-y-1">
+        <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 ml-1">Confirm Password</label>
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+            <Lock className="h-4 w-4 text-slate-400" />
+          </div>
+          <input
+            type={showConfirmPwd ? 'text' : 'password'}
+            value={form.confirmPassword}
+            onChange={handleChange('confirmPassword')}
+            placeholder="Repeat password"
+            className={`block w-full pl-10 pr-10 py-2 text-sm rounded-xl border ${errors.confirmPassword ? 'border-red-400 dark:border-red-600' : 'border-slate-200 dark:border-slate-700'} bg-white/50 dark:bg-slate-800/50 text-slate-950 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all`}
+            required
+          />
+          <button type="button" onClick={() => setShowConfirmPwd(s => !s)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors">
+            {showConfirmPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+        {errors.confirmPassword && <p className="text-[10px] text-red-500 ml-1 mt-0.5">{errors.confirmPassword}</p>}
+      </div>
 
       <button
         type="submit"
