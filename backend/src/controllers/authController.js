@@ -272,16 +272,31 @@ exports.rejectUser = async (req, res) => {
 };
 
 // GET /api/auth/departments  — Public (used by registration form)
+// Also ensures the canonical department list is always correct in the DB (Vercel-safe)
+const CANONICAL_DEPARTMENTS = [
+  { id: 'd1111111-1111-1111-1111-111111111111', name: 'Computer Science', faculty: 'Science and Computing' },
+  { id: 'd2222222-2222-2222-2222-222222222222', name: 'Mass Comm', faculty: 'Social Sciences' },
+  { id: 'd3333333-3333-3333-3333-333333333333', name: 'Economics', faculty: 'Social Sciences' },
+  { id: 'd4444444-4444-4444-4444-444444444444', name: 'Accounting', faculty: 'Management Sciences' },
+];
+
 exports.listDepartments = async (req, res) => {
   try {
+    // Upsert canonical departments so the DB always has the correct names
+    // (safe to call repeatedly - no data loss, works in serverless environments)
+    for (const dept of CANONICAL_DEPARTMENTS) {
+      await Department.upsert(dept);
+    }
+
     const departments = await Department.findAll({
       attributes: ['id', 'name', 'faculty'],
-      order: [['faculty', 'ASC'], ['name', 'ASC']]
+      order: [['name', 'ASC']],
     });
     return res.status(200).json(departments);
   } catch (error) {
     console.error('Error fetching departments:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    // Fallback: return canonical list so the form is never broken
+    return res.status(200).json(CANONICAL_DEPARTMENTS);
   }
 };
 

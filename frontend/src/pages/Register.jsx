@@ -9,6 +9,14 @@ import api from '../services/api';
 
 const LEVELS = [100, 200, 300, 400, 500];
 
+// Fallback list - matches the canonical departments in the backend
+const FALLBACK_DEPARTMENTS = [
+  { id: 'd1111111-1111-1111-1111-111111111111', name: 'Computer Science', faculty: 'Science and Computing' },
+  { id: 'd2222222-2222-2222-2222-222222222222', name: 'Mass Comm', faculty: 'Social Sciences' },
+  { id: 'd3333333-3333-3333-3333-333333333333', name: 'Economics', faculty: 'Social Sciences' },
+  { id: 'd4444444-4444-4444-4444-444444444444', name: 'Accounting', faculty: 'Management Sciences' },
+];
+
 const InputField = ({ label, icon: Icon, error, ...props }) => (
   <div className="space-y-1">
     <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 ml-1">
@@ -70,8 +78,8 @@ const StudentForm = ({ onSuccess }) => {
 
   useEffect(() => {
     api.get('/auth/departments')
-      .then(r => setDepartments(r.data))
-      .catch(() => setDepartments([]));
+      .then(r => setDepartments(r.data && r.data.length > 0 ? r.data : FALLBACK_DEPARTMENTS))
+      .catch(() => setDepartments(FALLBACK_DEPARTMENTS));
   }, []);
 
   const validate = () => {
