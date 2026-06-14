@@ -58,6 +58,7 @@ const courseRoutes = require("./routes/courseRoutes");
 const sessionRoutes = require("./routes/sessionRoutes");
 const attendanceRoutes = require("./routes/attendanceRoutes");
 const reportRoutes = require("./routes/reportRoutes");
+const scoresRoutes = require("./routes/scoresRoutes");
 
 app.use("/api/auth", authRoutes);
 app.use("/auth", authRoutes);
@@ -76,6 +77,9 @@ app.use("/attendance", attendanceRoutes);
 
 app.use("/api/reports", reportRoutes);
 app.use("/reports", reportRoutes);
+
+app.use("/api/scores", scoresRoutes);
+app.use("/scores", scoresRoutes);
 
 const path = require("path");
 const PORT = process.env.PORT || 5000;

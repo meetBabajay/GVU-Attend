@@ -10,6 +10,7 @@ const Room = require('./Room');
 const AttendanceLog = require('./AttendanceLog');
 const AttendanceReport = require('./AttendanceReport');
 const Score = require('./Score');
+const TestScore = require('./TestScore');
 
 // 1. User <-> Student (One-to-One Profile relation)
 User.hasOne(Student, { foreignKey: 'user_id', as: 'studentProfile', onDelete: 'CASCADE' });
@@ -68,6 +69,18 @@ Score.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 // 13. Student <-> Score via User (for scoreboard queries)
 Student.hasOne(Score, { foreignKey: 'userId', sourceKey: 'userId', as: 'score' });
 
+// 14. User <-> TestScore (One-to-Many)
+User.hasMany(TestScore, { foreignKey: 'studentId', as: 'testScores', onDelete: 'CASCADE' });
+TestScore.belongsTo(User, { foreignKey: 'studentId', as: 'studentUser' });
+
+// 15. Course <-> TestScore (One-to-Many)
+Course.hasMany(TestScore, { foreignKey: 'courseId', as: 'testScores', onDelete: 'CASCADE' });
+TestScore.belongsTo(Course, { foreignKey: 'courseId', as: 'course' });
+
+// 16. User (Instructor) <-> TestScore (Created by)
+User.hasMany(TestScore, { foreignKey: 'createdBy', as: 'createdTestScores', onDelete: 'RESTRICT' });
+TestScore.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
+
 module.exports = {
   sequelize,
   User,
@@ -81,4 +94,5 @@ module.exports = {
   AttendanceLog,
   AttendanceReport,
   Score,
+  TestScore,
 };

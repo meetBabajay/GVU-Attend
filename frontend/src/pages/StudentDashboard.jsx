@@ -29,7 +29,9 @@ const StudentDashboard = () => {
   
   const [courses, setCourses] = useState([]);
   const [attendanceHistory, setAttendanceHistory] = useState([]);
+  const [studentScores, setStudentScores] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(true);
+  const [scoresLoading, setScoresLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchHistory = async () => {
@@ -41,6 +43,17 @@ const StudentDashboard = () => {
       console.error('Failed to fetch attendance history:', err);
     } finally {
       setHistoryLoading(false);
+    }
+  };
+
+  const fetchStudentScores = async () => {
+    try {
+      const response = await api.get('/scores/student');
+      setStudentScores(response.data);
+    } catch (err) {
+      console.error('Failed to fetch student scores:', err);
+    } finally {
+      setScoresLoading(false);
     }
   };
 
@@ -59,6 +72,7 @@ const StudentDashboard = () => {
     fetchCourses();
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchHistory();
+    fetchStudentScores();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
@@ -96,6 +110,7 @@ const StudentDashboard = () => {
       
       setSessionCode('');
       fetchHistory();
+      fetchStudentScores();
     } catch (err) {
       console.error('Attendance submission error:', err);
       const errMsg = err.response?.data?.error || err.message || 'Failed to submit attendance';
@@ -372,9 +387,9 @@ const StudentDashboard = () => {
             </div>
           </div>
 
-          {/* Recent History */}
-          <div className="lg:col-span-2">
-            <div className="glass-panel rounded-3xl p-6 lg:p-8 h-full">
+          {/* Recent History & Scoreboard */}
+          <div className="lg:col-span-2 space-y-8">
+            <div className="glass-panel rounded-3xl p-6 lg:p-8">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold text-slate-900 dark:text-white">Recent Attendance</h2>
                 <div className="text-xs text-slate-500">
@@ -436,6 +451,75 @@ const StudentDashboard = () => {
                       </div>
                     );
                   })}
+                </div>
+              )}
+            </div>
+
+            {/* Course Grades & Scoreboard */}
+            <div className="glass-panel rounded-3xl p-6 lg:p-8">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">My Course Grades & Scoreboard</h2>
+                  <p className="text-xs text-slate-500 mt-1">Attendance scores, test scores, and cumulative totals</p>
+                </div>
+              </div>
+
+              {scoresLoading ? (
+                <div className="flex flex-col items-center justify-center py-12 space-y-3">
+                  <div className="spinner"></div>
+                  <span className="text-xs text-slate-500">Loading grade sheets...</span>
+                </div>
+              ) : studentScores.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-sm text-slate-550">No grades or scoreboard information available.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400">
+                        <th className="py-3 font-semibold">Course</th>
+                        <th className="py-3 font-semibold text-center">Attendance Score</th>
+                        <th className="py-3 font-semibold text-center">Test Score</th>
+                        <th className="py-3 font-semibold text-center">Total Score</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                      {studentScores.map((score) => (
+                        <tr key={score.courseId} className="hover:bg-slate-550/5 dark:hover:bg-slate-800/10">
+                          <td className="py-4">
+                            <span className="font-bold text-slate-900 dark:text-white block">{score.courseCode}</span>
+                            <span className="text-[10px] text-slate-500 mt-0.5 block">{score.courseTitle}</span>
+                          </td>
+                          <td className="py-4 text-center font-semibold text-slate-700 dark:text-slate-350">
+                            {score.attendanceScore}
+                          </td>
+                          <td className="py-4 text-center">
+                            {score.testScore !== null ? (
+                              <span className="font-semibold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg">
+                                {score.testScore}
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-amber-600 bg-amber-50 dark:bg-amber-950/20 dark:text-amber-450 px-2 py-0.5 rounded-md font-medium">
+                                Not graded yet
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-4 text-center">
+                            {score.totalScore !== null ? (
+                              <span className="font-bold text-primary-600 dark:text-primary-450 text-sm">
+                                {score.totalScore}
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-slate-400 font-medium">
+                                -
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>

@@ -28,6 +28,13 @@ const InstructorDashboard = () => {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Tab State: 'sessions' or 'grades'
+  const [activeTab, setActiveTab] = useState('sessions');
+  const [courseGrades, setCourseGrades] = useState({ course: {}, students: [] });
+  const [gradesLoading, setGradesLoading] = useState(false);
+  const [submittingGrades, setSubmittingGrades] = useState({});
+  const [editingScores, setEditingScores] = useState({});
+
   // Active Session State
   const [activeSession, setActiveSession] = useState(null);
   const [qrToken, setQrToken] = useState('');
@@ -109,11 +116,63 @@ const InstructorDashboard = () => {
     }
   };
 
+  const fetchCourseGrades = async (courseId) => {
+    if (!courseId) return;
+    setGradesLoading(true);
+    try {
+      const response = await api.get(`/scores/course/${courseId}`);
+      setCourseGrades(response.data);
+      // Initialize editing values
+      const initialScores = {};
+      response.data.students.forEach(student => {
+        initialScores[student.studentId] = student.testScore !== null ? student.testScore.toString() : '';
+      });
+      setEditingScores(initialScores);
+    } catch (err) {
+      console.error('Failed to fetch course grades:', err);
+    } finally {
+      setGradesLoading(false);
+    }
+  };
+
+  const handleSaveScore = async (studentId, userId) => {
+    if (!selectedCourse) return;
+    const scoreVal = editingScores[studentId];
+    if (scoreVal === undefined || scoreVal === '') {
+      alert('Please enter a valid score');
+      return;
+    }
+    const parsed = parseFloat(scoreVal);
+    if (isNaN(parsed) || parsed < 0 || parsed > 100) {
+      alert('Score must be a number between 0 and 100');
+      return;
+    }
+
+    setSubmittingGrades(prev => ({ ...prev, [studentId]: true }));
+    try {
+      await api.post('/scores/test', {
+        studentId: userId,
+        courseId: selectedCourse.id,
+        score: parsed
+      });
+      await fetchCourseGrades(selectedCourse.id);
+    } catch (err) {
+      console.error('Failed to save score:', err);
+      alert(err.response?.data?.error || 'Failed to save score');
+    } finally {
+      setSubmittingGrades(prev => ({ ...prev, [studentId]: false }));
+    }
+  };
+
   useEffect(() => {
     if (selectedCourse) {
-      loadSessions(selectedCourse.id);
+      if (activeTab === 'sessions') {
+        loadSessions(selectedCourse.id);
+      } else if (activeTab === 'grades') {
+        fetchCourseGrades(selectedCourse.id);
+      }
     }
-  }, [selectedCourse]);
+  }, [selectedCourse, activeTab]);
 
   const fetchQRToken = async () => {
     if (!activeSession) return;
@@ -528,15 +587,22 @@ const InstructorDashboard = () => {
             )}
           </div>
 
-          {/* Sessions List */}
+          {/* Sessions & Grades Tab Panel */}
           <div className="lg:col-span-2">
-            <div className="glass-panel rounded-3xl p-6 lg:p-8 h-full">
-              <div className="flex justify-between items-center mb-6">
+            <div className="glass-panel rounded-3xl p-6 lg:p-8">
+              {/* Header and Download Button */}
+              <div className="flex justify-between items-center mb-4">
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">Sessions History</h2>
-                  <p className="text-xs text-slate-500 mt-1">Manage and export attendance records for {selectedCourse?.courseCode}</p>
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                    {activeTab === 'sessions' ? 'Sessions History' : 'Course Gradebook'}
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {activeTab === 'sessions' 
+                      ? `Manage and export attendance records for ${selectedCourse?.courseCode}` 
+                      : `View and update course grades for ${selectedCourse?.courseCode}`}
+                  </p>
                 </div>
-                {selectedCourse && (
+                {selectedCourse && activeTab === 'sessions' && (
                   <button 
                     onClick={() => handleDownloadCSV(selectedCourse.id)}
                     className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-semibold text-xs shadow-md transition-colors"
@@ -547,61 +613,158 @@ const InstructorDashboard = () => {
                 )}
               </div>
 
-              {sessions.length === 0 ? (
-                <div className="text-center py-20 border border-dashed border-slate-200 dark:border-slate-700 rounded-2xl">
-                  <Clock className="mx-auto w-10 h-10 text-slate-300 dark:text-slate-650 mb-3" />
-                  <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-350">No Sessions Found</h4>
-                  <p className="text-xs text-slate-500 mt-1">Start by creating the first session for this class.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {sessions.map((session) => (
-                    <div 
-                      key={session.id} 
-                      className={`flex items-center justify-between p-4 rounded-2xl bg-white/50 dark:bg-slate-800/50 border transition-all ${
-                        session.isActive 
-                          ? 'border-green-300 dark:border-green-800 shadow-sm bg-green-50/20 dark:bg-green-950/10' 
-                          : 'border-slate-100 dark:border-slate-700/50 hover:border-slate-200 dark:hover:border-slate-600'
-                      }`}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className={`p-3 rounded-xl ${
-                          session.isActive 
-                            ? 'bg-green-150 text-green-600 dark:bg-green-900/30 dark:text-green-400' 
-                            : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
-                        }`}>
-                          <Users size={18} />
-                        </div>
-                        <div>
-                          <h4 className="font-semibold text-slate-900 dark:text-white text-xs">{session.sessionName}</h4>
-                          <div className="flex items-center text-[10px] text-slate-500 dark:text-slate-400 gap-3 mt-1.5">
-                            <span className="flex items-center gap-1"><Clock size={10} /> {session.date} ({session.startTime.substring(0, 5)})</span>
-                            <span className="flex items-center gap-1"><MapPin size={10} /> {session.roomLocation}</span>
+              {/* Tab Selector */}
+              <div className="flex border-b border-slate-200 dark:border-slate-800 mb-6">
+                <button
+                  onClick={() => setActiveTab('sessions')}
+                  className={`py-2 px-4 font-bold text-xs border-b-2 transition-all ${
+                    activeTab === 'sessions'
+                      ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                      : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-350'
+                  }`}
+                >
+                  Sessions History
+                </button>
+                <button
+                  onClick={() => setActiveTab('grades')}
+                  className={`py-2 px-4 font-bold text-xs border-b-2 transition-all ${
+                    activeTab === 'grades'
+                      ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                      : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-350'
+                  }`}
+                >
+                  Student Scoreboard & Grades
+                </button>
+              </div>
+
+              {/* Tab Content 1: Sessions History */}
+              {activeTab === 'sessions' && (
+                <>
+                  {sessions.length === 0 ? (
+                    <div className="text-center py-20 border border-dashed border-slate-200 dark:border-slate-700 rounded-2xl">
+                      <Clock className="mx-auto w-10 h-10 text-slate-300 dark:text-slate-650 mb-3" />
+                      <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-350">No Sessions Found</h4>
+                      <p className="text-xs text-slate-500 mt-1">Start by creating the first session for this class.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {sessions.map((session) => (
+                        <div 
+                          key={session.id} 
+                          className={`flex items-center justify-between p-4 rounded-2xl bg-white/50 dark:bg-slate-800/50 border transition-all ${
+                            session.isActive 
+                              ? 'border-green-300 dark:border-green-800 shadow-sm bg-green-50/20 dark:bg-green-950/10' 
+                              : 'border-slate-100 dark:border-slate-700/50 hover:border-slate-200 dark:hover:border-slate-600'
+                          }`}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className={`p-3 rounded-xl ${
+                              session.isActive 
+                                ? 'bg-green-150 text-green-600 dark:bg-green-900/30 dark:text-green-400' 
+                                : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+                            }`}>
+                              <Users size={18} />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-slate-900 dark:text-white text-xs">{session.sessionName}</h4>
+                              <div className="flex items-center text-[10px] text-slate-500 dark:text-slate-400 gap-3 mt-1.5">
+                                <span className="flex items-center gap-1"><Clock size={10} /> {session.date} ({session.startTime.substring(0, 5)})</span>
+                                <span className="flex items-center gap-1"><MapPin size={10} /> {session.roomLocation}</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-3">
+                            {session.isActive ? (
+                              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 animate-pulse">
+                                Active
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => handleOpenSession(session)}
+                                disabled={!!activeSession}
+                                className={`px-3 py-1.5 rounded-lg font-semibold text-[10px] transition-colors ${
+                                  activeSession 
+                                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
+                                    : 'bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900'
+                                }`}
+                              >
+                                Open Session
+                              </button>
+                            )}
                           </div>
                         </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-3">
-                        {session.isActive ? (
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 animate-pulse">
-                            Active
-                          </span>
-                        ) : (
-                          <button
-                            onClick={() => handleOpenSession(session)}
-                            disabled={!!activeSession}
-                            className={`px-3 py-1.5 rounded-lg font-semibold text-[10px] transition-colors ${
-                              activeSession 
-                                ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
-                                : 'bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900'
-                            }`}
-                          >
-                            Open Session
-                          </button>
-                        )}
-                      </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
+                </>
+              )}
+
+              {/* Tab Content 2: Student Scoreboard & Grades */}
+              {activeTab === 'grades' && (
+                <div>
+                  {gradesLoading ? (
+                    <div className="flex flex-col items-center justify-center py-20 space-y-3">
+                      <div className="spinner"></div>
+                      <span className="text-xs text-slate-500">Loading course gradebook...</span>
+                    </div>
+                  ) : courseGrades.students?.length === 0 ? (
+                    <div className="text-center py-20 border border-dashed border-slate-200 dark:border-slate-700 rounded-2xl">
+                      <Users className="mx-auto w-10 h-10 text-slate-300 dark:text-slate-650 mb-3" />
+                      <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-350">No Enrolled Students</h4>
+                      <p className="text-xs text-slate-500 mt-1">There are no students enrolled in this course yet.</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400">
+                            <th className="py-3 font-semibold">Student Details</th>
+                            <th className="py-3 font-semibold text-center">Attendance Score</th>
+                            <th className="py-3 font-semibold text-center w-32">Test Score (0 - 100)</th>
+                            <th className="py-3 font-semibold text-center">Total Score</th>
+                            <th className="py-3 font-semibold text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                          {courseGrades.students?.map((student) => (
+                            <tr key={student.studentId} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
+                              <td className="py-4">
+                                <span className="font-bold text-slate-900 dark:text-white block">{student.fullName}</span>
+                                <span className="text-[10px] text-slate-500 mt-0.5 block">{student.matricNumber}</span>
+                              </td>
+                              <td className="py-4 text-center font-semibold text-slate-700 dark:text-slate-350">
+                                {student.attendanceScore}
+                              </td>
+                              <td className="py-4 text-center">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={editingScores[student.studentId] !== undefined ? editingScores[student.studentId] : ''}
+                                  onChange={(e) => setEditingScores(prev => ({ ...prev, [student.studentId]: e.target.value }))}
+                                  className="w-20 px-2 py-1 text-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                  placeholder="N/A"
+                                />
+                              </td>
+                              <td className="py-4 text-center font-bold text-slate-800 dark:text-slate-200">
+                                {student.totalScore !== null ? student.totalScore : '-'}
+                              </td>
+                              <td className="py-4 text-right">
+                                <button
+                                  onClick={() => handleSaveScore(student.studentId, student.userId)}
+                                  disabled={submittingGrades[student.studentId]}
+                                  className="px-3 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold text-[10px] shadow-md disabled:opacity-50 transition-colors"
+                                >
+                                  {submittingGrades[student.studentId] ? 'Saving...' : 'Save'}
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
