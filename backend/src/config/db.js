@@ -1,5 +1,15 @@
 const { Sequelize } = require('sequelize');
 
+// Explicitly require drivers so Vercel's Node File Trace (@vercel/nft) 
+// includes them in the deployed serverless function bundle.
+// Sequelize requires these dynamically, which Vercel cannot detect.
+try {
+  require('sqlite3');
+  require('pg');
+} catch (e) {
+  // Ignore errors if dependencies are missing during local dev
+}
+
 // DATABASE_URL from environment (Supabase pooler or any postgres:// URL)
 const databaseUrl = process.env.DATABASE_URL;
 
