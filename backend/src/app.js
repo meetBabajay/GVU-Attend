@@ -52,12 +52,30 @@ app.get("/api/health", (req, res) => {
 });
 
 // API Routes
-app.use("/api/auth", require("./routes/authRoutes"));
-app.use("/api/admin", require("./routes/adminRoutes"));
-app.use("/api/courses", require("./routes/courseRoutes"));
-app.use("/api/sessions", require("./routes/sessionRoutes"));
-app.use("/api/attendance", require("./routes/attendanceRoutes"));
-app.use("/api/reports", require("./routes/reportRoutes"));
+const authRoutes = require("./routes/authRoutes");
+const adminRoutes = require("./routes/adminRoutes");
+const courseRoutes = require("./routes/courseRoutes");
+const sessionRoutes = require("./routes/sessionRoutes");
+const attendanceRoutes = require("./routes/attendanceRoutes");
+const reportRoutes = require("./routes/reportRoutes");
+
+app.use("/api/auth", authRoutes);
+app.use("/auth", authRoutes);
+
+app.use("/api/admin", adminRoutes);
+app.use("/admin", adminRoutes);
+
+app.use("/api/courses", courseRoutes);
+app.use("/courses", courseRoutes);
+
+app.use("/api/sessions", sessionRoutes);
+app.use("/sessions", sessionRoutes);
+
+app.use("/api/attendance", attendanceRoutes);
+app.use("/attendance", attendanceRoutes);
+
+app.use("/api/reports", reportRoutes);
+app.use("/reports", reportRoutes);
 
 const path = require("path");
 const PORT = process.env.PORT || 5000;
@@ -66,8 +84,9 @@ const PORT = process.env.PORT || 5000;
 const fs = require("fs");
 const distPath = path.join(__dirname, "../../frontend/dist");
 const hasBuiltFrontend = fs.existsSync(distPath);
+const isVercel = process.env.VERCEL === '1' || !!process.env.VERCEL;
 
-if (process.env.NODE_ENV === "production" || process.env.SERVE_STATIC === "true" || hasBuiltFrontend) {
+if (!isVercel && (process.env.NODE_ENV === "production" || process.env.SERVE_STATIC === "true" || hasBuiltFrontend)) {
   app.use(express.static(distPath));
   
   // Fallback for SPA routing: serve index.html for all non-API paths

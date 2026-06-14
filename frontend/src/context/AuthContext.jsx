@@ -16,6 +16,9 @@ export const AuthProvider = ({ children }) => {
       if (storedToken) {
         try {
           const response = await api.get('/auth/me');
+          if (typeof response.data === 'string' && response.data.toLowerCase().includes('<html')) {
+            throw new Error('API returned HTML instead of JSON.');
+          }
           setUser(response.data);
         } catch (error) {
           console.error('Session validation failed:', error);
@@ -34,6 +37,12 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     try {
       const response = await api.post('/auth/login', credentials);
+      
+      // Prevent crash if Vercel returns 500 HTML error page or 404 index.html
+      if (typeof response.data === 'string' && response.data.toLowerCase().includes('<html')) {
+        throw new Error('API returned HTML instead of JSON. The backend might be offline or misconfigured on Vercel.');
+      }
+
       const { token: newToken, user: userData } = response.data;
       
       localStorage.setItem('token', newToken);
@@ -42,7 +51,7 @@ export const AuthProvider = ({ children }) => {
       return { success: true, user: userData };
     } catch (error) {
       console.error('Login request failed:', error);
-      const errorMessage = error.response?.data?.error || 'Authentication failed. Please try again.';
+      const errorMessage = error.response?.data?.error || error.message || 'Authentication failed. Please try again.';
       return { success: false, error: errorMessage };
     }
   };
