@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Camera, Calendar, CheckCircle, XCircle, LogOut, Clock, Activity, Key, AlertCircle, MapPin } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Camera, Calendar, CheckCircle, XCircle, LogOut, Clock, Key, AlertCircle, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useGeolocation } from '../hooks/useGeolocation';
@@ -11,7 +11,7 @@ const decodeToken = (token) => {
     const payload = token.split('.')[1];
     const decoded = JSON.parse(atob(payload));
     return decoded;
-  } catch (e) {
+  } catch {
     return null;
   }
 };
@@ -57,48 +57,10 @@ const StudentDashboard = () => {
     };
 
     fetchCourses();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
-
-  useEffect(() => {
-    let scanner = null;
-    if (scanning) {
-      import('html5-qrcode')
-        .then((pkg) => {
-          const Html5QrcodeScanner = pkg.Html5QrcodeScanner;
-          const container = document.getElementById('reader');
-          if (!container) return;
-
-          scanner = new Html5QrcodeScanner(
-            "reader",
-            { fps: 10, qrbox: { width: 250, height: 250 } },
-            /* verbose= */ false
-          );
-          
-          scanner.render(
-            (decodedText) => {
-              handleCheckIn(decodedText);
-              setScanning(false);
-              scanner.clear().catch(e => console.error("Error clearing scanner:", e));
-            },
-            (error) => {
-              // Ignore scanning trace errors
-            }
-          );
-        })
-        .catch((err) => {
-          console.error("Failed to load scanner", err);
-          setScannerError("Camera scanner failed to load. Please paste the session token manually.");
-          setScanning(false);
-        });
-    }
-
-    return () => {
-      if (scanner) {
-        scanner.clear().catch(e => console.error("Cleanup error:", e));
-      }
-    };
-  }, [scanning]);
 
   const handleCheckIn = async (token) => {
     setStatusMessage(null);
@@ -145,6 +107,47 @@ const StudentDashboard = () => {
       setIsSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    let scanner = null;
+    if (scanning) {
+      import('html5-qrcode')
+        .then((pkg) => {
+          const Html5QrcodeScanner = pkg.Html5QrcodeScanner;
+          const container = document.getElementById('reader');
+          if (!container) return;
+
+          scanner = new Html5QrcodeScanner(
+            "reader",
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            /* verbose= */ false
+          );
+          
+          scanner.render(
+            (decodedText) => {
+              handleCheckIn(decodedText);
+              setScanning(false);
+              scanner.clear().catch(e => console.error("Error clearing scanner:", e));
+            },
+            () => {
+              // Ignore scanning trace errors
+            }
+          );
+        })
+        .catch((err) => {
+          console.error("Failed to load scanner", err);
+          setScannerError("Camera scanner failed to load. Please paste the session token manually.");
+          setScanning(false);
+        });
+    }
+
+    return () => {
+      if (scanner) {
+        scanner.clear().catch(e => console.error("Cleanup error:", e));
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scanning]);
 
   const handleManualCheckIn = (e) => {
     e.preventDefault();

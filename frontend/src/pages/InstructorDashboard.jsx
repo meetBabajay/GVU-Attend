@@ -1,21 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useState, useEffect, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { 
-  Users, PlusCircle, LogOut, Clock, Activity, BarChart3, Settings, 
-  Copy, Check, BookOpen, MapPin, Plus, FileText, Download, HelpCircle 
+  Users, LogOut, Clock, Activity, BarChart3, 
+  Copy, Check, BookOpen, MapPin, Plus, Download 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useGeolocation } from '../hooks/useGeolocation';
-import api, { API_BASE_URL } from '../services/api';
-
-const ROOM_PRESETS = [
-  { name: 'Computing Lab 1', latitude: 6.42806200, longitude: 3.42194300, radius: 50 },
-  { name: 'Computing Lab 2', latitude: 6.42810000, longitude: 3.42200000, radius: 50 },
-  { name: 'Lecture Theater A', latitude: 6.42900000, longitude: 3.42300000, radius: 100 },
-  { name: 'Main Auditorium', latitude: 6.42750000, longitude: 3.42050000, radius: 100 },
-  { name: 'Custom Location', latitude: '', longitude: '', radius: 50 }
-];
+import api from '../services/api';
 
 const InstructorDashboard = () => {
   const { user, logout } = useAuth();
@@ -122,6 +115,26 @@ const InstructorDashboard = () => {
     }
   }, [selectedCourse]);
 
+  const fetchQRToken = async () => {
+    if (!activeSession) return;
+    try {
+      const response = await api.get(`/sessions/${activeSession.id}/qr`);
+      setQrToken(response.data.qrToken);
+    } catch (err) {
+      console.error('Failed to fetch QR token:', err);
+    }
+  };
+
+  const fetchAttendees = async () => {
+    if (!activeSession) return;
+    try {
+      const response = await api.get(`/attendance/session/${activeSession.id}`);
+      setAttendees(response.data);
+    } catch (err) {
+      console.error('Failed to fetch attendees list:', err);
+    }
+  };
+
   // Polling for QR Code and Attendance logs when a session is active
   useEffect(() => {
     if (activeSession) {
@@ -144,27 +157,8 @@ const InstructorDashboard = () => {
       if (qrPollRef.current) clearInterval(qrPollRef.current);
       if (attendeePollRef.current) clearInterval(attendeePollRef.current);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSession]);
-
-  const fetchQRToken = async () => {
-    if (!activeSession) return;
-    try {
-      const response = await api.get(`/sessions/${activeSession.id}/qr`);
-      setQrToken(response.data.qrToken);
-    } catch (err) {
-      console.error('Failed to fetch QR token:', err);
-    }
-  };
-
-  const fetchAttendees = async () => {
-    if (!activeSession) return;
-    try {
-      const response = await api.get(`/attendance/session/${activeSession.id}`);
-      setAttendees(response.data);
-    } catch (err) {
-      console.error('Failed to fetch attendees list:', err);
-    }
-  };
 
   // Open/Close Session
   const handleOpenSession = async (session) => {
@@ -254,7 +248,7 @@ const InstructorDashboard = () => {
       const nowTime = new Date().toTimeString().split(' ')[0];
       const endTime = new Date(Date.now() + 2 * 60 * 60 * 1000).toTimeString().split(' ')[0]; // 2 hours duration default
 
-      const response = await api.post(`/sessions/course/${selectedCourse.id}`, {
+      await api.post(`/sessions/course/${selectedCourse.id}`, {
         sessionName: sessionForm.sessionName,
         date: today,
         startTime: nowTime,
@@ -295,8 +289,7 @@ const InstructorDashboard = () => {
 
   const handleDownloadCSV = (courseId) => {
     // Standard direct browser download link
-    const token = localStorage.getItem('token');
-    const url = `${API_BASE_URL}/api/reports/course/${courseId}/export-csv?token=${token}`;
+    // We can fetch with Bearer token or let the browser open it.
     
     // We can fetch with Bearer token or let the browser open it.
     // The export-csv route expects authenticateJWT, but since standard links don't pass headers,
@@ -319,6 +312,15 @@ const InstructorDashboard = () => {
     logout();
     navigate('/');
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <div className="spinner"></div>
+        <span className="text-xs text-slate-550 mt-3 font-semibold">Loading Instructor Portal...</span>
+      </div>
+    );
+  }
 
   if (!user) return null;
 

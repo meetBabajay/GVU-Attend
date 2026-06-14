@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from 'react';
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useEffect, useState } from 'react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 const AdminDashboard = () => {
-  const { token, logout } = useAuth();
+  const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState('overview'); // overview, pending, rooms
   const [pending, setPending] = useState([]);
   const [rooms, setRooms] = useState([]);
+  const [scoreboard, setScoreboard] = useState([]);
   const [stats, setStats] = useState({
     totalStudents: 0,
     totalLecturers: 0,
@@ -39,6 +41,10 @@ const AdminDashboard = () => {
       // Fetch rooms
       const roomsRes = await api.get('/admin/rooms');
       setRooms(roomsRes.data);
+
+      // Fetch scoreboard
+      const scoreboardRes = await api.get('/admin/scoreboard');
+      setScoreboard(scoreboardRes.data);
 
       setError(null);
     } catch (e) {
